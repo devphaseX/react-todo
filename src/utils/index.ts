@@ -69,5 +69,10 @@ export function createTodo(title: string, status: TaskStatus): TodoItem {
     id: uuid(),
     title,
     status,
+    date: new Date().toLocaleString(),
   };
+}
+
+export function isListEmpty(list: Array<any>) {
+  return list.length === 0;
 }

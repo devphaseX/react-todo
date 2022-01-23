@@ -1,6 +1,7 @@
 import { FC, FormEvent, useState } from 'react';
 import styles from '../styles/modules/modal.module.scss';
 import { MdOutlineClose } from 'react-icons/md';
+import toast from 'react-hot-toast';
 import Button from './Button';
 import { TaskStatus } from '../utils/types';
 import { useDispatch } from 'react-redux';
@@ -22,10 +23,13 @@ const TodoModal: FC<TodoModalProps> = ({ isModalOpen, setModalStatus }) => {
 
     if (title !== '') {
       dispatch(addTodo(createTodo(title, status)));
-      clearForm();
+      toast.success('Task added succesfully');
       setModalStatus(false);
+    } else {
+      toast.error('Sorry!!! 😟️, You forget to name your task.');
     }
 
+    clearForm();
     function clearForm() {
       setTitle('');
       setStatus('incomplete');

@@ -28,8 +28,6 @@ const initialState: InitialTodoData = {
   todos: _initTodos(),
 };
 
-console.log(initialState);
-
 const todo = createSlice({
   name: 'todo',
   initialState,
@@ -39,7 +37,7 @@ const todo = createSlice({
       syncStateWithLocalStorage(todosLocalStorageKey, {
         data: [],
         dataSyncResolver: (localState: TodoList) => {
-          return localState.concat(action.payload);
+          return [action.payload, ...localState];
         },
       });
     },
