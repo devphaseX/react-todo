@@ -7,6 +7,7 @@ import { TaskStatus, TodoItem } from '../utils/types';
 import { useDispatch } from 'react-redux';
 import { addTodo, editTodo } from '../app/slices/todoSlice';
 import { createTodo, updateTodo } from '../utils';
+import { AnimatePresence, motion, Variant } from 'framer-motion';
 
 type TodoModalProps = (TodoModalAddProps | TodoModalUpdateProps) & {
   isModalOpen: boolean;
@@ -23,6 +24,28 @@ interface TodoModalUpdateProps {
   isEditingMode: boolean;
   setEditingMode: (status: boolean) => void;
 }
+
+const dropInModalVariant: Record<string, Variant> = {
+  hidden: {
+    opacity: 0,
+    transform: 'scale(0.9)',
+  },
+
+  visible: {
+    opacity: 1,
+    transform: 'scale(1)',
+    transition: {
+      duration: 1,
+      type: 'spring',
+      damping: 25,
+      stiffness: 500,
+    },
+  },
+
+  get exit() {
+    return this.hidden;
+  },
+};
 
 const TodoModal: FC<TodoModalProps> = (props) => {
   const { type, isModalOpen, setModalStatus } = props;
@@ -78,58 +101,76 @@ const TodoModal: FC<TodoModalProps> = (props) => {
   }, [props.isModalOpen]);
 
   return (
-    <div
-      className={styles.wrapper}
-      style={{ display: isModalOpen ? 'inherit' : 'none' }}
-    >
-      <div className={styles.container}>
-        <div
-          className={styles.closeButton}
-          onClick={() => setModalStatus(false)}
-          tabIndex={0}
-          role="button"
+    <AnimatePresence>
+      {isModalOpen ? (
+        <motion.div
+          className={styles.wrapper}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
         >
-          <MdOutlineClose />
-        </div>
-        <form className={styles.form} onSubmit={submitHandler}>
-          <h1 className={styles.formTitle}>{type} Task</h1>
-          <div>
-            <label htmlFor="title">Title</label>
-            <input
-              id="title"
-              type="text"
-              value={title}
-              onChange={({ target: { value } }) => {
-                setTitle(value);
-              }}
-            />
-          </div>
-          <div>
-            <label htmlFor="title">Title</label>
-            <select
-              name="status"
-              id="status"
-              onChange={({ target }) => {
-                const selectedElement = target as HTMLSelectElement;
-                setStatus(
-                  selectedElement.selectedOptions[0].value as TaskStatus
-                );
-              }}
-              value={status}
+          <motion.div
+            className={styles.container}
+            variants={dropInModalVariant}
+            initial="initial"
+            animate="visible"
+            exit="exit"
+          >
+            <motion.div
+              className={styles.closeButton}
+              onClick={() => setModalStatus(false)}
+              tabIndex={0}
+              role="button"
+              initial={{ opacity: 0, top: 40 }}
+              animate={{ opacity: 1, top: -10 }}
+              exit={{ opacity: 0, top: 40 }}
             >
-              <option value="incomplete">Incomplete</option>
-              <option value="complete">Complete</option>
-            </select>
-          </div>
-          <div className={styles.buttonContainer}>
-            <Button type="submit">{type} Task</Button>
-            <Button variant="secondary" onClick={() => setModalStatus(false)}>
-              Cancel
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+              <MdOutlineClose />
+            </motion.div>
+            <form className={styles.form} onSubmit={submitHandler}>
+              <h1 className={styles.formTitle}>{type} Task</h1>
+              <div>
+                <label htmlFor="title">Title</label>
+                <input
+                  id="title"
+                  type="text"
+                  value={title}
+                  onChange={({ target: { value } }) => {
+                    setTitle(value);
+                  }}
+                />
+              </div>
+              <div>
+                <label htmlFor="title">Title</label>
+                <select
+                  name="status"
+                  id="status"
+                  onChange={({ target }) => {
+                    const selectedElement = target as HTMLSelectElement;
+                    setStatus(
+                      selectedElement.selectedOptions[0].value as TaskStatus
+                    );
+                  }}
+                  value={status}
+                >
+                  <option value="incomplete">Incomplete</option>
+                  <option value="complete">Complete</option>
+                </select>
+              </div>
+              <div className={styles.buttonContainer}>
+                <Button type="submit">{type} Task</Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => setModalStatus(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   );
 };
 

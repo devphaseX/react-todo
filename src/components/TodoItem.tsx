@@ -8,9 +8,15 @@ import { deleteTodo, editTodo } from '../app/slices/todoSlice';
 import toast from 'react-hot-toast';
 import TodoModal from './TodoModal';
 import CheckButton from './CheckButton';
+import { motion, Variant } from 'framer-motion';
 
 const statusStyleName: Partial<Record<TaskStatus, string>> = {
   complete: 'todoText--completed',
+};
+
+const todoItemVariant: Record<string, Variant> = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
 };
 
 const TodoItem: FC<{ item: TodoItemData }> = ({ item }) => {
@@ -44,7 +50,12 @@ const TodoItem: FC<{ item: TodoItemData }> = ({ item }) => {
   const statusStyleClass = statusStyleName[item.status] ?? '';
 
   return (
-    <div className={styles.item}>
+    <motion.div
+      className={styles.item}
+      variants={todoItemVariant}
+      initial="hidden"
+      animate="visible"
+    >
       <CheckButton
         isChecked={isChecked || item.status === 'complete'}
         setCheckedStatus={setCheckedStatus}
@@ -88,7 +99,7 @@ const TodoItem: FC<{ item: TodoItemData }> = ({ item }) => {
         type="Update"
         setModalStatus={setUpdateModalStatus}
       />
-    </div>
+    </motion.div>
   );
 };
 

@@ -140,3 +140,29 @@ export function isItemInList(index: number, limit: number) {
 export function findTaskInTodo(todos: Array<TodoItem>, todoId: string) {
   return todos.findIndex((todo) => todo.id === todoId);
 }
+
+let getCurrentStatusTodos: (
+  todoStatus: TaskStatus,
+  todoList: Array<TodoItem>
+) => Array<TodoItem>;
+
+{
+  const taskFilterMode = {
+    all: taskStatusFilter('all'),
+    complete: taskStatusFilter('complete'),
+    incomplete: taskStatusFilter('incomplete'),
+  };
+
+  function taskStatusFilter(status: 'all' | 'complete' | 'incomplete') {
+    return function compareStatus(todos: Array<TodoItem>) {
+      if (status === 'all') return todos;
+      return todos.filter((todo) => todo.status === status);
+    };
+  }
+
+  getCurrentStatusTodos = function getCurrentStatusTodos(todoStatus, todoList) {
+    return taskFilterMode[todoStatus](todoList);
+  };
+}
+
+export { getCurrentStatusTodos };

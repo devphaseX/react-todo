@@ -5,4 +5,4 @@ export interface TodoItem {
   date: string;
 }
 
-export type TaskStatus = 'complete' | 'incomplete';
+export type TaskStatus = 'all' | 'complete' | 'incomplete';
