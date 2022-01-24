@@ -1,4 +1,4 @@
-import { FC } from 'react';
+import React, { FC } from 'react';
 import styles from '../styles/modules/button.module.scss';
 import { createClass } from '../utils';
 
@@ -25,11 +25,20 @@ const Button: FC<ButtonProps> = ({
 
 interface SelectButtonProps {
   id: string;
+  value: string;
+  selectHandler: (e: React.SyntheticEvent<HTMLSelectElement, Event>) => void;
 }
-const SelectButton: FC<SelectButtonProps> = ({ children, id }) => (
+const SelectButton: FC<SelectButtonProps> = ({
+  children,
+  id,
+  value,
+  selectHandler,
+}) => (
   <select
     className={createClass([styles.button, styles.button__select])}
     id={id}
+    value={value}
+    onChange={selectHandler}
   >
     {children}
   </select>

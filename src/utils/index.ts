@@ -1,6 +1,8 @@
 import { TaskStatus, TodoItem } from './types';
 //@ts-ignore
 import { v4 as uuid } from 'uuid';
+//@ts-ignore
+import { format } from 'date-fns/esm';
 
 export const createClass = (names: Array<string>) =>
   names.filter((name) => name.trim() !== '').join(' ');
@@ -34,19 +36,37 @@ export const persistToLocalStorage = (data: any, key: string) => {
   }
 };
 
+type SafeParseResult<D> = SafeFallbackResult<D> | RetrieveResult<D>;
+
+type SafeFallbackResult<D> = { type: 'fallback'; data: D };
+type RetrieveResult<D> = { type: 'retrieve'; data: D };
+
 function safelyParseJson<ProcessDataForm>(
   rawData: string | null,
   fallback: ProcessDataForm
-): ProcessDataForm {
+): SafeParseResult<ProcessDataForm> {
   let data: ProcessDataForm;
-  if (rawData === null) return fallback;
+  if (rawData === null) return _createFallbackResult(fallback);
+
+  function _createFallbackResult(
+    data: ProcessDataForm
+  ): SafeFallbackResult<ProcessDataForm> {
+    return { data: fallback, type: 'fallback' };
+  }
+
+  function _createRetrieveResult(
+    data: ProcessDataForm
+  ): RetrieveResult<ProcessDataForm> {
+    return { type: 'retrieve', data };
+  }
+
   try {
     data = JSON.parse(rawData);
   } finally {
     if (data! === undefined) {
-      return fallback;
+      return _createFallbackResult(fallback);
     }
-    return data;
+    return _createRetrieveResult(data);
   }
 }
 
@@ -54,14 +74,23 @@ export function syncStateWithLocalStorage<ParseData = any>(
   key: string,
   fallBackOption: {
     data: any;
-    dataSyncResolver: (data: ParseData) => ParseData;
+    overridePersist?: boolean;
+    dataSyncResolver?: (data: ParseData) => ParseData;
   }
 ) {
-  const cacheLocalStorage = getFromLocalStorage(key, fallBackOption.data);
-  persistToLocalStorage(
-    fallBackOption.dataSyncResolver(cacheLocalStorage),
-    key
-  );
+  const { data, overridePersist, dataSyncResolver } = fallBackOption;
+
+  if (overridePersist) {
+    persistToLocalStorage(data, key);
+  } else {
+    const cacheLocalStorage = getFromLocalStorage(key, fallBackOption.data);
+    let newLocalState = cacheLocalStorage.data;
+
+    if (dataSyncResolver) {
+      newLocalState = dataSyncResolver(newLocalState);
+    }
+    persistToLocalStorage(newLocalState, key);
+  }
 }
 
 export function createTodo(title: string, status: TaskStatus): TodoItem {
@@ -73,6 +102,41 @@ export function createTodo(title: string, status: TaskStatus): TodoItem {
   };
 }
 
+export function updateTodo(
+  todo: TodoItem,
+  update: Partial<TodoItem>
+): TodoItem {
+  return { ...todo, ...update, date: new Date().toLocaleString() };
+}
+
+export function updateTodos(
+  position: number,
+  item: TodoItem,
+  todos: Array<TodoItem>
+) {
+  const updatedTodos = [...todos];
+  updatedTodos.splice(position, 1, item);
+  return updatedTodos;
+}
+
+export function deleteTodos(position: number, todos: Array<TodoItem>) {
+  const remainTodos = [...todos];
+  remainTodos.splice(position, 1);
+  return remainTodos;
+}
+
 export function isListEmpty(list: Array<any>) {
   return list.length === 0;
+}
+
+export function formatTimeForTask(date: string) {
+  return date;
+}
+
+export function isItemInList(index: number, limit: number) {
+  return index > -1 && index < limit;
+}
+
+export function findTaskInTodo(todos: Array<TodoItem>, todoId: string) {
+  return todos.findIndex((todo) => todo.id === todoId);
 }
