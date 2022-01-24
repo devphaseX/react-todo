@@ -24,8 +24,6 @@ const AppContent: FC = () => {
     (state: StoreState) => state.todo
   );
 
-  console.log(todoStatus);
-
   return todoList && !isListEmpty(todoList) ? (
     <div className={styles.content__wrapper}>
       {taskFilterMode[todoStatus](todoList).map((todo) => (
