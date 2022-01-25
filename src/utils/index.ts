@@ -1,8 +1,6 @@
 import { TaskStatus, TodoItem } from './types';
 //@ts-ignore
 import { v4 as uuid } from 'uuid';
-//@ts-ignore
-import { format } from 'date-fns/esm';
 
 export const createClass = (names: Array<string>) =>
   names.filter((name) => name.trim() !== '').join(' ');
@@ -98,7 +96,7 @@ export function createTodo(title: string, status: TaskStatus): TodoItem {
     id: uuid(),
     title,
     status,
-    date: new Date().toLocaleString(),
+    date: new Date().toISOString(),
   };
 }
 
@@ -106,7 +104,7 @@ export function updateTodo(
   todo: TodoItem,
   update: Partial<TodoItem>
 ): TodoItem {
-  return { ...todo, ...update, date: new Date().toLocaleString() };
+  return { ...todo, ...update, date: new Date().toISOString() };
 }
 
 export function updateTodos(
@@ -130,7 +128,7 @@ export function isListEmpty(list: Array<any>) {
 }
 
 export function formatTimeForTask(date: string) {
-  return date;
+  return new Date(date).toLocaleString();
 }
 
 export function isItemInList(index: number, limit: number) {
@@ -163,6 +161,19 @@ let getCurrentStatusTodos: (
   getCurrentStatusTodos = function getCurrentStatusTodos(todoStatus, todoList) {
     return taskFilterMode[todoStatus](todoList);
   };
+}
+
+export function sortTodosByModifyDate(todos: Array<TodoItem>) {
+  function _modifiedDate(todoOne: TodoItem, todoTwo: TodoItem) {
+    return parseDateInMilli(todoOne.date) > parseDateInMilli(todoTwo.date)
+      ? -1
+      : 1;
+  }
+  return todos.slice(0).sort(_modifiedDate);
+}
+
+function parseDateInMilli(date: string | Date) {
+  return new Date(date).getTime();
 }
 
 export { getCurrentStatusTodos };

@@ -4,36 +4,43 @@ import {
   findTaskInTodo,
   getFromLocalStorage,
   isItemInList,
+  sortTodosByModifyDate,
   syncStateWithLocalStorage,
   updateTodos,
 } from '../../utils';
-import { TodoItem } from '../../utils/types';
+import { TaskStatus, TodoItem } from '../../utils/types';
 
 interface InitialTodoData {
   todos: TodoList;
-  todoStatus: 'all' | 'complete' | 'incomplete';
+  todoStatus: TaskStatus;
 }
 
 const todosLocalStorageKey = 'todos';
 
 function _initTodos() {
-  const { data: todos, type } = getFromLocalStorage(
+  let { data: todos, type } = getFromLocalStorage(
     todosLocalStorageKey,
     [] as TodoList
   );
+
+  todos = sortTodosByModifyDate(todos);
 
   if (type == 'fallback') {
     _setInitialLocalState();
   }
 
   function _setInitialLocalState() {
-    syncStateWithLocalStorage(todosLocalStorageKey, {
-      data: todos,
-      overridePersist: true,
-    });
+    nonRetrivableLocalStorageSync(todos);
   }
 
   return todos;
+}
+
+function nonRetrivableLocalStorageSync(todoList: Array<TodoItem>) {
+  return void syncStateWithLocalStorage(todosLocalStorageKey, {
+    data: todoList,
+    overridePersist: true,
+  });
 }
 
 type TodoList = Array<TodoItem>;
@@ -47,33 +54,28 @@ const todo = createSlice({
   initialState,
   reducers: {
     addTodo(state, action) {
-      state.todos.push(action.payload);
-      syncStateWithLocalStorage(todosLocalStorageKey, {
-        data: state.todos,
-        overridePersist: true,
-      });
+      state.todos = sortTodosByModifyDate([...state.todos, action.payload]);
+      nonRetrivableLocalStorageSync(state.todos);
     },
 
     deleteTodo(state, action) {
       const todoPosition = findTaskInTodo(state.todos, action.payload);
 
       if (isItemInList(todoPosition, state.todos.length)) {
-        state.todos = deleteTodos(todoPosition, state.todos);
-        syncStateWithLocalStorage(todosLocalStorageKey, {
-          data: state.todos,
-          overridePersist: true,
-        });
+        state.todos = sortTodosByModifyDate(
+          deleteTodos(todoPosition, state.todos)
+        );
+        nonRetrivableLocalStorageSync(state.todos);
       }
     },
 
     editTodo(state, action) {
       const todoPosition = findTaskInTodo(state.todos, action.payload.id);
       if (isItemInList(todoPosition, state.todos.length)) {
-        state.todos = updateTodos(todoPosition, action.payload, state.todos);
-        syncStateWithLocalStorage(todosLocalStorageKey, {
-          data: state.todos,
-          overridePersist: true,
-        });
+        state.todos = sortTodosByModifyDate(
+          updateTodos(todoPosition, action.payload, state.todos)
+        );
+        nonRetrivableLocalStorageSync(state.todos);
       }
     },
 
