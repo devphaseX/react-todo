@@ -26,7 +26,7 @@ export const getFromLocalStorage = <Fallback>(
     }
     return safelyParseJson(cached, fallback);
   } catch (e) {
-    throw e;
+    throw typeof e === 'string' ? new Error(e) : e;
   }
 };
 
