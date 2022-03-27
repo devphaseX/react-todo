@@ -60,17 +60,26 @@ function _markReturnResult<ProcessDataForm>(
 function _markReturnResult<ProcessDataForm>(
   data,
   isFallback?: boolean
-): SafeFallbackResult<ProcessDataForm> | RetrieveResult<ProcessDataForm> {
+): SafeParseResult<ProcessDataForm> {
   return { type: isFallback ? 'fallback' : 'retrieve', data };
 }
 
+function safelyParseJson<ProcessDataForm>(
+  rawData: null
+): SafeFallbackResult<ProcessDataForm | null>;
+function safelyParseJson<ProcessDataForm>(
+  rawData: string,
+  fallback?: ProcessDataForm
+): SafeFallbackResult<ProcessDataForm>;
 function safelyParseJson<ProcessDataForm>(
   rawData: string | null,
   fallback?: ProcessDataForm
 ): SafeParseResult<ProcessDataForm> {
   let data: ProcessDataForm;
 
-  if (rawData === null) return _markReturnResult(fallback, true);
+  if (rawData === null) {
+    return _markReturnResult(fallback === undefined ? null : fallback, true);
+  }
 
   try {
     data = JSON.parse(rawData);
