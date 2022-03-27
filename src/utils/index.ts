@@ -7,17 +7,26 @@ export const createClass = (names: Array<string>) =>
 
 export const getFromLocalStorage = <Fallback>(
   key: string,
-  fallback: Fallback
+  fallback?: Fallback
 ) => {
   function getItem(key: string) {
     return window.localStorage.getItem(key);
   }
-  if (window) {
-    return safelyParseJson(getItem(key), fallback);
-  } else {
-    throw new TypeError(
-      `LocalStorage does not work in a non browser environment.`
-    );
+
+  try {
+    if (!window) {
+      throw `LocalStorage does not work in a non browser environment.`;
+    }
+    let cached: string | null;
+    try {
+      cached = getItem(key);
+    } catch (e) {
+      if (fallback === undefined) throw e;
+      cached = null;
+    }
+    return safelyParseJson(cached, fallback);
+  } catch (e) {
+    throw e;
   }
 };
 
@@ -39,33 +48,44 @@ type SafeParseResult<D> = SafeFallbackResult<D> | RetrieveResult<D>;
 type SafeFallbackResult<D> = { type: 'fallback'; data: D };
 type RetrieveResult<D> = { type: 'retrieve'; data: D };
 
+function _markReturnResult<ProcessDataForm>(
+  data,
+  fallback: true
+): SafeFallbackResult<ProcessDataForm>;
+function _markReturnResult<ProcessDataForm>(
+  data,
+  fallback?: false
+): RetrieveResult<ProcessDataForm>;
+
+function _markReturnResult<ProcessDataForm>(
+  data,
+  isFallback?: boolean
+): SafeFallbackResult<ProcessDataForm> | RetrieveResult<ProcessDataForm> {
+  return { type: isFallback ? 'fallback' : 'retrieve', data };
+}
+
 function safelyParseJson<ProcessDataForm>(
   rawData: string | null,
-  fallback: ProcessDataForm
+  fallback?: ProcessDataForm
 ): SafeParseResult<ProcessDataForm> {
   let data: ProcessDataForm;
-  if (rawData === null) return _createFallbackResult(fallback);
 
-  function _createFallbackResult(
-    data: ProcessDataForm
-  ): SafeFallbackResult<ProcessDataForm> {
-    return { data: fallback, type: 'fallback' };
-  }
-
-  function _createRetrieveResult(
-    data: ProcessDataForm
-  ): RetrieveResult<ProcessDataForm> {
-    return { type: 'retrieve', data };
-  }
+  if (rawData === null) return _markReturnResult(fallback, true);
 
   try {
     data = JSON.parse(rawData);
-  } finally {
-    if (data! === undefined) {
-      return _createFallbackResult(fallback);
+  } catch {
+    if (fallback == null) {
+      throw new TypeError(
+        'Erroring during json parsing, try providing a fallback to safely exit error phase.'
+      );
     }
-    return _createRetrieveResult(data);
   }
+
+  if ([null, undefined].includes(data)) {
+    return _markReturnResult(fallback, true);
+  }
+  return _markReturnResult(data);
 }
 
 export function syncStateWithLocalStorage<ParseData = any>(
@@ -81,8 +101,11 @@ export function syncStateWithLocalStorage<ParseData = any>(
   if (overridePersist) {
     persistToLocalStorage(data, key);
   } else {
-    const cacheLocalStorage = getFromLocalStorage(key, fallBackOption.data);
-    let newLocalState = cacheLocalStorage.data;
+    let newLocalState;
+    {
+      const cacheLocalStorage = getFromLocalStorage(key, fallBackOption.data);
+      newLocalState = cacheLocalStorage.data;
+    }
 
     if (dataSyncResolver) {
       newLocalState = dataSyncResolver(newLocalState);
